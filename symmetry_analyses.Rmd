@@ -9,7 +9,7 @@ library(tidyverse)
 
 # load data
 ```{r}
-num_runs = 8
+num_runs = 20
 num_layerss = 2:4
 ```
 
@@ -32,7 +32,8 @@ for (run_i in 0:(num_runs-1)) {
 
 ```{r}
 d = d %>%
-  complete(run, nesting(nonlinear, symmetric, num_layers, epoch), fill=list(MSE=0))
+  filter((num_layers==4 & epoch %% 200 == 0) | (num_layers == 3 & epoch %% 50 == 0) | num_layers == 2) %>%
+  complete(run, symmetric, nesting(nonlinear, num_layers, epoch), fill=list(MSE=0)) 
 ```
 
 
@@ -47,6 +48,11 @@ ggplot(data=d, aes(x=epoch, y=MSE, color=symmetric)) +
   geom_line(stat="summary", fun.y=median, size=1) +
   geom_line(aes(group=interaction(run, symmetric)), alpha=0.2) +
   facet_wrap(.~nonlinear + num_layers, scales="free_x") +
+  labs(y="Loss (L2)") +
   scale_color_brewer(palette="Set1")
+```
+
+```{r}
+ggsave("plots/basic_symmetry_comparison.png", width=8, height=4)
 ```
 

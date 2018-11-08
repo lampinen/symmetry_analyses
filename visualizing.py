@@ -14,9 +14,9 @@ y_data_asymm[range(len(S)), range(len(S))] = S
 plot.figure()
 plot.imshow(y_data)
 plot.colorbar()
-plot.savefig('symmetric_data.png')
+plot.savefig('plots/symmetric_data.png')
 
 plot.figure()
 plot.imshow(y_data_asymm)
 plot.colorbar()
-plot.savefig('asymmetric_data.png')
+plot.savefig('plots/asymmetric_data.png')
