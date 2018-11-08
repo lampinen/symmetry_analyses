@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from scipy.linalg import block_diag
-from orthogonal_matrices import random_orthogonal
 
 ######Parameters###################
 init_eta = 0.01
@@ -31,8 +30,8 @@ y_data_asymm[range(len(S)), range(len(S))] = S
 
 
 for rseed in xrange(0, nruns):
-    for nonlinear in [True, False]:
-        nonlinearity_function = tf.nn.leaky_relu if nonlinear else tf.identity
+    for nonlinear in [False, True]:
+        nonlinearity_function = tf.nn.leaky_relu
         for nlayer in [4, 3, 2]:
             for symmetric in [False, True]:
                 num_hidden = num_hidden
@@ -46,29 +45,54 @@ for rseed in xrange(0, nruns):
 
                 input_ph = tf.placeholder(tf.float32, shape=[None, num_inputs])
                 target_ph = tf.placeholder(tf.float32, shape=[None, num_outputs])
-                if nlayer == 2:
-                    W1 = tf.Variable(tf.random_uniform([num_hidden,num_inputs],0.,2.0/(num_hidden+num_inputs)))
-                    W2 = tf.Variable(tf.random_uniform([num_outputs,num_hidden],0.,2./(num_hidden+num_outputs)))
-                    internal_rep = nonlinearity_function(tf.matmul(W1,tf.transpose(input_ph)))
-                    pre_output = tf.matmul(W2,internal_rep)
-                elif nlayer == 3:
-                    W1 = tf.Variable(tf.random_uniform([num_hidden,num_inputs],0.,2./(num_hidden+num_inputs)))
-                    W2 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
-                    W3 = tf.Variable(tf.random_uniform([num_outputs,num_hidden],0.,2./(num_hidden+num_outputs)))
-                    internal_rep = nonlinearity_function(tf.matmul(W1,tf.transpose(input_ph)))
-                        
-                    pre_output = tf.matmul(W3,nonlinearity_function(tf.matmul(W2,internal_rep)))
-                elif nlayer == 4:
-                    W1 = tf.Variable(tf.random_uniform([num_hidden,num_inputs],0.,2./(num_hidden+num_inputs)))
-                    W2 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
-                    W3 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
-                    W4 = tf.Variable(tf.random_uniform([num_outputs,num_hidden],0.,2./(num_hidden+num_outputs)))
-                    internal_rep = nonlinearity_function(tf.matmul(W1,tf.transpose(input_ph)))
-                        
-                    pre_output = tf.matmul(W4,nonlinearity_function(tf.matmul(W3,nonlinearity_function(tf.matmul(W2,internal_rep)))))
+                if nonlinear:
+                    if nlayer == 2:
+                        W1 = tf.Variable(tf.random_uniform([num_hidden,num_inputs],0.,2.0/(num_hidden+num_inputs)))
+                        W2 = tf.Variable(tf.random_uniform([num_outputs,num_hidden],0.,2./(num_hidden+num_outputs)))
+                        internal_rep = nonlinearity_function(tf.matmul(W1,tf.transpose(input_ph)))
+                        pre_output = tf.matmul(W2,internal_rep)
+                    elif nlayer == 3:
+                        W1 = tf.Variable(tf.random_uniform([num_hidden,num_inputs],0.,2./(num_hidden+num_inputs)))
+                        W2 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
+                        W3 = tf.Variable(tf.random_uniform([num_outputs,num_hidden],0.,2./(num_hidden+num_outputs)))
+                        internal_rep = nonlinearity_function(tf.matmul(W1,tf.transpose(input_ph)))
+                            
+                        pre_output = tf.matmul(W3,nonlinearity_function(tf.matmul(W2,internal_rep)))
+                    elif nlayer == 4:
+                        W1 = tf.Variable(tf.random_uniform([num_hidden,num_inputs],0.,2./(num_hidden+num_inputs)))
+                        W2 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
+                        W3 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
+                        W4 = tf.Variable(tf.random_uniform([num_outputs,num_hidden],0.,2./(num_hidden+num_outputs)))
+                        internal_rep = nonlinearity_function(tf.matmul(W1,tf.transpose(input_ph)))
+                            
+                        pre_output = tf.matmul(W4,nonlinearity_function(tf.matmul(W3,nonlinearity_function(tf.matmul(W2,internal_rep)))))
+                    else:
+                        print "Error, invalid number of layers given"
+                        exit(1)
                 else:
-                    print "Error, invalid number of layers given"
-                    exit(1)
+                    if nlayer == 2:
+                        W1 = tf.Variable(tf.random_uniform([num_hidden,num_inputs],0.,2.0/(num_hidden+num_inputs)))
+                        W2 = tf.Variable(tf.random_uniform([num_outputs,num_hidden],0.,2./(num_hidden+num_outputs)))
+                        internal_rep = (tf.matmul(W1,tf.transpose(input_ph)))
+                        pre_output = tf.matmul(W2,internal_rep)
+                    elif nlayer == 3:
+                        W1 = tf.Variable(tf.random_uniform([num_hidden,num_inputs],0.,2./(num_hidden+num_inputs)))
+                        W2 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
+                        W3 = tf.Variable(tf.random_uniform([num_outputs,num_hidden],0.,2./(num_hidden+num_outputs)))
+                        internal_rep = (tf.matmul(W1,tf.transpose(input_ph)))
+                            
+                        pre_output = tf.matmul(W3,(tf.matmul(W2,internal_rep)))
+                    elif nlayer == 4:
+                        W1 = tf.Variable(tf.random_uniform([num_hidden,num_inputs],0.,2./(num_hidden+num_inputs)))
+                        W2 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
+                        W3 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
+                        W4 = tf.Variable(tf.random_uniform([num_outputs,num_hidden],0.,2./(num_hidden+num_outputs)))
+                        internal_rep = (tf.matmul(W1,tf.transpose(input_ph)))
+                            
+                        pre_output = tf.matmul(W4,(tf.matmul(W3,(tf.matmul(W2,internal_rep)))))
+                    else:
+                        print "Error, invalid number of layers given"
+                        exit(1)
 
                 output = nonlinearity_function(pre_output)
 
