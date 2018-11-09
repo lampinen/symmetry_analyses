@@ -62,22 +62,33 @@ U, S, V, = np.linalg.svd(y_data, full_matrices=False)
 
 # whatever
 
-y_data_asym = np.array(
+new_V = np.array(
     [[1, 0.5, 0.25, 0, 0, 0, 0],
      [0, 0, 0, 1, 0.33, 0, 0],
      [0, 0, 0, 0, 0, 1, 0.2],
      [1, 0, 0, 0, 0, 0, 0]])
 
-y_data_asym /= np.expand_dims(np.sqrt(np.sum(np.square(y_data_asym), axis=1)), 1)
-print(y_data_asym)
+new_U = np.array(
+    [[4, 3, 2, 1],
+     [1, 0, 0, -4],
+     [0, 1, 0, 0],
+     [1, 0, 0, 0]]).transpose()
 
-y_data_asym *= np.expand_dims(S, 1)
+new_V /= np.expand_dims(np.sqrt(np.sum(np.square(new_V), axis=1)), 1)
+new_U = new_U/np.expand_dims(np.sqrt(np.sum(np.square(new_U), axis=0)), 0)
+print(new_V)
+print(new_U)
+
+y_data_asym = np.matmul(np.multiply(new_U, np.expand_dims(S, 1)), new_V)
+
+print(y_data_asym)
+print()
+
 
 
 U, S, V, = np.linalg.svd(y_data_asym, full_matrices=False)
 print(U)
 print(S)
 print(V)
-print(y_data_asym)
 
 np.savetxt("asymmetric_data.csv", y_data_asym, delimiter=',')
