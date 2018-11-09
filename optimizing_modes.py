@@ -11,9 +11,10 @@ U, S, V, = np.linalg.svd(y_data, full_matrices=False)
 var_by_unit = np.sum(np.square(y_data), axis=0)
 print(var_by_unit)
 
-new_y = tf.get_variable("new_y", shape=y_data.shape,
-#                        initializer=tf.zeros_initializer())
-                        initializer=tf.constant_initializer(np.multiply(V, np.expand_dims(S, 1))))
+sqrt_new_y = tf.get_variable("sqrt_new_y", shape=y_data.shape,
+                             initializer=tf.constant_initializer(np.sqrt(np.abs(np.multiply(V, np.expand_dims(S, 1))))))
+
+new_y = tf.square(sqrt_new_y) # hacky positivity
 
 org_SVD_mat = np.diag(S**2)
 
@@ -30,9 +31,9 @@ mode_1_losses = rat_loss(new_y[0, 1], new_y[0,2], 2) + rat_loss(new_y[0, 2], new
 mode_2_losses = rat_loss(new_y[0, 3], new_y[0,4], 3) + rat_loss(new_y[0, 4], new_y[0,5], 3) + rat_loss(new_y[0, 5], new_y[0, 6], 3)
 mode_3_losses = rat_loss(new_y[0, 3], new_y[0,4], 5) + rat_loss(new_y[0, 4], new_y[0,5], 5) + rat_loss(new_y[0, 5], new_y[0, 6], 5)
 
-total_loss = var_by_unit_loss + SVD_loss + mode_1_losses + mode_2_losses + mode_3_losses
+total_loss = var_by_unit_loss + 10 * SVD_loss + 0.2 * (mode_1_losses + mode_2_losses + mode_3_losses)
 
-optimizer = tf.train.AdamOptimizer(0.01)
+optimizer = tf.train.AdamOptimizer(0.0001)
 optimize = optimizer.minimize(total_loss)
 
 with tf.Session() as sess:
@@ -40,15 +41,16 @@ with tf.Session() as sess:
     print("initial")
     print(sess.run(new_y))
     print(sess.run(total_loss))
-    for i in range(1000):
+    for i in range(20000):
         sess.run(optimize)
+        if i % 100 == 0:
+            print(sess.run([total_loss, var_by_unit_loss, SVD_loss]))
     print("final")
     optimized_y = sess.run(new_y)
     print(optimized_y)
     print(sess.run([total_loss, var_by_unit_loss, SVD_loss]))
-    row_norms = np.sqrt(np.sum(np.square(optimized_y), axis=1))
-    optimized_y /= np.expand_dims(row_norms, 1)
-    optimized_y *= np.expand_dims(S, 1)
+    new_U, _, new_V = np.linalg.svd(optimized_y, full_matrices=False)
+    optimized_y = np.matmul(new_U, np.matmul(np.diag(S), new_V))
     print(optimized_y)
 
 
