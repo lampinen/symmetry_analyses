@@ -68,9 +68,11 @@ y_data_asym = np.array(
      [0, 0, 0, 0, 0, 1, 0.2],
      [1, 0, 0, 0, 0, 0, 0]])
 
-y_data_asym /= np.expand_dims(np.sum(y_data_asym, axis=1), 1)
+y_data_asym /= np.expand_dims(np.sqrt(np.sum(np.square(y_data_asym), axis=1)), 1)
 print(y_data_asym)
+
 y_data_asym *= np.expand_dims(S, 1)
+
 
 U, S, V, = np.linalg.svd(y_data_asym, full_matrices=False)
 print(U)
