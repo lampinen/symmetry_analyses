@@ -8,8 +8,7 @@ y_data = np.array(
      [1, 0, 1, 0.5, 0, 0.5, 0],
      [1, 0, 1, 0, 0.5, 0, 0.5]])
 U, S, V, = np.linalg.svd(y_data)
-y_data_asymm = np.zeros_like(y_data)
-y_data_asymm[range(len(S)), range(len(S))] = S
+y_data_asymm = np.loadtxt("asymmetric_data.csv", delimiter=",") 
 
 plot.figure()
 plot.imshow(y_data)
