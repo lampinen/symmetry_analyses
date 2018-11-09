@@ -6,11 +6,12 @@ output: html_document
 ```{r}
 library(tidyverse)
 library(lme4)
+library(lmerTest)
 ```
 
 # load data
 ```{r}
-num_runs = 50
+num_runs = 120
 num_layerss = 2:4
 ```
 
@@ -33,7 +34,7 @@ for (run_i in 0:(num_runs-1)) {
 
 ```{r}
 d = d %>%
-  filter((num_layers==4 & epoch %% 200 == 0) | (num_layers == 3 & epoch %% 50 == 0) | num_layers == 2, epoch < 30000) %>%
+  filter((num_layers==4 & epoch %% 200 == 0) | (num_layers == 3 & epoch %% 50 == 0) | num_layers == 2) %>%
   complete(run, symmetric, nesting(nonlinear, num_layers, epoch), fill=list(MSE=0)) 
 ```
 

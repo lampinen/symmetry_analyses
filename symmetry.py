@@ -8,8 +8,8 @@ from scipy.linalg import block_diag
 init_eta = 0.005
 eta_decay = 1.0 #multiplicative per eta_decay_epoch epochs
 eta_decay_epoch = 10
-nepochs = 50000
-nruns = 500
+nepochs = 100000
+nruns = 200
 num_inputs = 4
 num_outputs = 7
 num_hidden = 4
