@@ -11,7 +11,7 @@ library(lmerTest)
 
 # load data
 ```{r}
-num_runs = 120
+num_runs = 5
 num_layerss = 2:4
 ```
 
@@ -70,5 +70,10 @@ learned_d = d %>%
 ```{r}
 model = lmer(learned_epoch ~ symmetric * nonlinear + (1 | run), learned_d)
 summary(model)
+```
+
+```{r}
+ggplot(learned_d %>% filter(nonlinear), aes(x=learned_epoch, color=symmetric)) +
+  geom_line(stat="density")
 ```
 

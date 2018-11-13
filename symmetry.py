@@ -3,34 +3,57 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from scipy.linalg import block_diag
+from orthogonal_matrices import random_orthogonal
 
 ######Parameters###################
-init_eta = 0.005
+init_eta = 0.001
 eta_decay = 1.0 #multiplicative per eta_decay_epoch epochs
 eta_decay_epoch = 10
 nepochs = 100000
 nruns = 200
 num_inputs = 4
 num_outputs = 7
-num_hidden = 4
-termination_thresh = 0.0001 # stop at this loss
+num_hidden = 20
+termination_thresh = 0.01 # stop at this loss
+S_vec = [4, 0, 0, 0] # more than rank 1 requires more thought in how to create
+                     # controlled comparison datasets
 ###################################
 
 
 
-x_data = np.eye(4)
-y_data = np.array(
-    [[1, 1, 0, 0.5, 0, 0.5, 0],
-     [1, 1, 0, 0, 0.5, 0, 0.5],
-     [1, 0, 1, 0.5, 0, 0.5, 0],
-     [1, 0, 1, 0, 0.5, 0, 0.5]])
-U, S, V, = np.linalg.svd(y_data)
-#y_data_asymm = np.zeros_like(y_data)
-#y_data_asymm[range(len(S)), range(len(S))] = S
-y_data_asymm = np.loadtxt("asymmetric_data.csv", delimiter=",")
-U, S, V, = np.linalg.svd(y_data_asymm)
 
-for rseed in xrange(0, nruns):
+for rseed in xrange(nruns):
+    np.random.seed(rseed)
+
+    x_data = np.eye(4)
+
+    Vt = random_orthogonal(4)
+    U = random_orthogonal(7)[:, :4]
+    S = np.diag(S_vec) 
+    y_data_asymm = np.matmul(U, np.matmul(S, Vt))
+
+    y_data_asymm = y_data_asymm.transpose()
+
+    R = random_orthogonal(7)
+    D = np.diag(2*np.random.binomial(1, 0.5, 7) - 1)
+    Q = np.matmul(R.transpose(), np.matmul(D, R)) # all symmetric orthogonal matrices are of this form
+
+    y_data = y_data_asymm + np.matmul(y_data_asymm, Q)
+#    print(y_data)
+    U, S, V, = np.linalg.svd(y_data, full_matrices=False)
+    y_data /= (S[0]/S_vec[0])
+
+#    U, S, V, = np.linalg.svd(y_data_asymm, full_matrices=False)
+#    print(y_data_asymm)
+#    print(S)
+#    U, S, V, = np.linalg.svd(y_data, full_matrices=False)
+#    print(y_data)
+#    print(S)
+
+    if rseed == 0: # nice example
+        np.savetxt("asymmetric_data.csv", y_data_asymm, delimiter=',')
+        np.savetxt("symmetric_data.csv", y_data, delimiter=',')
+
     for nonlinear in [True, False]:
         nonlinearity_function = tf.nn.leaky_relu
         for nlayer in [4, 3, 2]:
@@ -95,7 +118,7 @@ for rseed in xrange(0, nruns):
                         print "Error, invalid number of layers given"
                         exit(1)
 
-                output = nonlinearity_function(pre_output)
+                output = (pre_output) # allow full range of output values
 
                 loss = tf.reduce_sum(tf.square(output - tf.transpose(target_ph)))# +0.05*(tf.nn.l2_loss(internal_rep))
                 output_grad = tf.gradients(loss,[output])[0]
