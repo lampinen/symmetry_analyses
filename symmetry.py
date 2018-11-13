@@ -6,53 +6,65 @@ from scipy.linalg import block_diag
 from orthogonal_matrices import random_orthogonal
 
 ######Parameters###################
-init_eta = 0.001
+init_eta = 0.005
 eta_decay = 1.0 #multiplicative per eta_decay_epoch epochs
 eta_decay_epoch = 10
-nepochs = 100000
-nruns = 200
-num_inputs = 4
-num_outputs = 7
-num_hidden = 20
+nepochs = 200000
 termination_thresh = 0.01 # stop at this loss
-S_vec = [4, 0, 0, 0] # more than rank 1 requires more thought in how to create
-                     # controlled comparison datasets
+nruns = 100
+num_inputs = 4
+num_outputs = 6
+num_hidden = 4
+S_vec = [4, 3, 2] 
 ###################################
 
+y_data_asymm = np.zeros([4, 6])
+y_data = np.zeros([4, 6])
 
+for i in range(len(S_vec)):
+    y_data_asymm[i, 2*i] = S_vec[i]
 
+y_data[0, 0:2] = S_vec[0]/np.sqrt(2)
+y_data[1, 2:4] = S_vec[1]/np.sqrt(2)
+y_data[2, 4:6] = S_vec[2]/np.sqrt(2)
+
+np.savetxt("asymmetric_data.csv", y_data_asymm, delimiter=',')
+np.savetxt("symmetric_data.csv", y_data, delimiter=',')
+
+U, S, V, = np.linalg.svd(y_data_asymm, full_matrices=False)
+print(y_data_asymm)
+print(S)
+U, S, V, = np.linalg.svd(y_data, full_matrices=False)
+print(y_data)
+print(S)
 
 for rseed in xrange(nruns):
     np.random.seed(rseed)
 
     x_data = np.eye(4)
 
-    Vt = random_orthogonal(4)
-    U = random_orthogonal(7)[:, :4]
-    S = np.diag(S_vec) 
-    y_data_asymm = np.matmul(U, np.matmul(S, Vt))
-
-    y_data_asymm = y_data_asymm.transpose()
-
-    R = random_orthogonal(7)
-    D = np.diag(2*np.random.binomial(1, 0.5, 7) - 1)
-    Q = np.matmul(R.transpose(), np.matmul(D, R)) # all symmetric orthogonal matrices are of this form
-
-    y_data = y_data_asymm + np.matmul(y_data_asymm, Q)
-#    print(y_data)
-    U, S, V, = np.linalg.svd(y_data, full_matrices=False)
-    y_data /= (S[0]/S_vec[0])
-
-#    U, S, V, = np.linalg.svd(y_data_asymm, full_matrices=False)
-#    print(y_data_asymm)
-#    print(S)
+#    Vt = random_orthogonal(4)
+#    U = random_orthogonal(7)[:, :4]
+#    S = np.diag(S_vec) 
+#    y_data_asymm = np.matmul(U, np.matmul(S, Vt))
+#
+#    y_data_asymm = y_data_asymm.transpose()
+#
+#    R = random_orthogonal(7)
+#    D = np.diag(2*np.random.binomial(1, 0.5, 7) - 1)
+#    Q = np.matmul(R.transpose(), np.matmul(D, R)) # all symmetric orthogonal matrices are of this form
+#
+#    y_data = y_data_asymm + np.matmul(y_data_asymm, Q)
+##    print(y_data)
 #    U, S, V, = np.linalg.svd(y_data, full_matrices=False)
-#    print(y_data)
-#    print(S)
-
-    if rseed == 0: # nice example
-        np.savetxt("asymmetric_data.csv", y_data_asymm, delimiter=',')
-        np.savetxt("symmetric_data.csv", y_data, delimiter=',')
+#    y_data /= (S[0]/S_vec[0])
+#
+##    U, S, V, = np.linalg.svd(y_data_asymm, full_matrices=False)
+##    print(y_data_asymm)
+##    print(S)
+##    U, S, V, = np.linalg.svd(y_data, full_matrices=False)
+##    print(y_data)
+##    print(S)
 
     for nonlinear in [True, False]:
         nonlinearity_function = tf.nn.leaky_relu
@@ -90,9 +102,20 @@ for rseed in xrange(nruns):
                         internal_rep = nonlinearity_function(tf.matmul(W1,tf.transpose(input_ph)))
                             
                         pre_output = tf.matmul(W4,nonlinearity_function(tf.matmul(W3,nonlinearity_function(tf.matmul(W2,internal_rep)))))
+                    elif nlayer == 5:
+                        W1 = tf.Variable(tf.random_uniform([num_hidden,num_inputs],0.,1./(num_hidden+num_inputs)))
+                        W2 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
+                        W3 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
+                        W4 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
+                        W5 = tf.Variable(tf.random_uniform([num_outputs,num_hidden],0.,1./(num_hidden+num_outputs)))
+                        internal_rep = nonlinearity_function(tf.matmul(W1,tf.transpose(input_ph)))
+                            
+                        pre_output = tf.matmul(W5,nonlinearity_function(tf.matmul(W4,nonlinearity_function(tf.matmul(W3,nonlinearity_function(tf.matmul(W2,internal_rep)))))))
                     else:
                         print "Error, invalid number of layers given"
                         exit(1)
+
+                    output = nonlinearity_function(pre_output) 
                 else:
                     if nlayer == 2:
                         W1 = tf.Variable(tf.random_uniform([num_hidden,num_inputs],0.,1./(num_hidden+num_inputs)))
@@ -114,11 +137,21 @@ for rseed in xrange(nruns):
                         internal_rep = (tf.matmul(W1,tf.transpose(input_ph)))
                             
                         pre_output = tf.matmul(W4,(tf.matmul(W3,(tf.matmul(W2,internal_rep)))))
+                    elif nlayer == 5:
+                        W1 = tf.Variable(tf.random_uniform([num_hidden,num_inputs],0.,1./(num_hidden+num_inputs)))
+                        W2 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
+                        W3 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
+                        W4 = tf.Variable(tf.random_uniform([num_hidden,num_hidden],0.,1./num_hidden))
+                        W5 = tf.Variable(tf.random_uniform([num_outputs,num_hidden],0.,1./(num_hidden+num_outputs)))
+                        internal_rep = (tf.matmul(W1,tf.transpose(input_ph)))
+                            
+                        pre_output = tf.matmul(W5,tf.matmul(W4,(tf.matmul(W3,(tf.matmul(W2,internal_rep))))))
                     else:
                         print "Error, invalid number of layers given"
                         exit(1)
 
-                output = (pre_output) # allow full range of output values
+                    output = pre_output
+
 
                 loss = tf.reduce_sum(tf.square(output - tf.transpose(target_ph)))# +0.05*(tf.nn.l2_loss(internal_rep))
                 output_grad = tf.gradients(loss,[output])[0]

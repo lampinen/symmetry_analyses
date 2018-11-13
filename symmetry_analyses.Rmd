@@ -11,7 +11,7 @@ library(lmerTest)
 
 # load data
 ```{r}
-num_runs = 5
+num_runs = 47
 num_layerss = 2:4
 ```
 
@@ -34,7 +34,7 @@ for (run_i in 0:(num_runs-1)) {
 
 ```{r}
 d = d %>%
-  filter((num_layers==4 & epoch %% 200 == 0) | (num_layers == 3 & epoch %% 50 == 0) | num_layers == 2) %>%
+  filter((num_layers==5 & epoch %% 500 == 0) | (num_layers==4 & epoch %% 200 == 0) | (num_layers == 3 & epoch %% 50 == 0) | num_layers == 2) %>%
   complete(run, symmetric, nesting(nonlinear, num_layers, epoch), fill=list(MSE=0)) 
 ```
 
@@ -60,7 +60,7 @@ ggsave("plots/basic_symmetry_comparison.png", width=8, height=4)
 
 ```{r}
 learned_d = d %>%
-  filter(MSE < 0.05, num_layers == 4) %>%
+  filter(MSE < 0.05) %>%
   group_by(nonlinear, symmetric, num_layers, run) %>%
   summarize(learned_epoch = min(epoch)) %>%
   ungroup()
@@ -68,12 +68,15 @@ learned_d = d %>%
 
 
 ```{r}
-model = lmer(learned_epoch ~ symmetric * nonlinear + (1 | run), learned_d)
+model = lmer(learned_epoch ~ symmetric * nonlinear + (1 | run), learned_d %>% filter(num_layers==4))
 summary(model)
 ```
 
 ```{r}
-ggplot(learned_d %>% filter(nonlinear), aes(x=learned_epoch, color=symmetric)) +
-  geom_line(stat="density")
+ggplot(learned_d %>% filter(nonlinear, num_layers==4), aes(x=learned_epoch, color=symmetric)) +
+  geom_line(stat="density") +
+  facet_grid(. ~ num_layers, scales="free")
 ```
-
+```{r}
+ggsave("plots/basic_symmetry_stopping_times.png", width=8, height=4)
+```
