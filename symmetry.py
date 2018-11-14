@@ -19,24 +19,39 @@ S_vec = [4, 3, 2]
 ###################################
 
 y_data_asymm = np.zeros([4, 6])
+y_data_asymm2 = np.zeros([4, 6])
 y_data = np.zeros([4, 6])
 
 for i in range(len(S_vec)):
     y_data_asymm[i, 2*i] = S_vec[i]
+
+y_data_asymm2[0, 0] = 5*S_vec[0]/np.sqrt(26)
+y_data_asymm2[0, 1] = S_vec[0]/np.sqrt(26)
+y_data_asymm2[1, 2] = 3*S_vec[1]/np.sqrt(10)
+y_data_asymm2[1, 3] = S_vec[1]/np.sqrt(10)
+y_data_asymm2[2, 4] = 2*S_vec[2]/np.sqrt(5)
+y_data_asymm2[2, 5] = S_vec[2]/np.sqrt(5)
 
 y_data[0, 0:2] = S_vec[0]/np.sqrt(2)
 y_data[1, 2:4] = S_vec[1]/np.sqrt(2)
 y_data[2, 4:6] = S_vec[2]/np.sqrt(2)
 
 np.savetxt("asymmetric_data.csv", y_data_asymm, delimiter=',')
+np.savetxt("asymmetric_data_2.csv", y_data_asymm2, delimiter=',')
 np.savetxt("symmetric_data.csv", y_data, delimiter=',')
 
 U, S, V, = np.linalg.svd(y_data_asymm, full_matrices=False)
 print(y_data_asymm)
 print(S)
+U, S, V, = np.linalg.svd(y_data_asymm2, full_matrices=False)
+print(y_data_asymm2)
+print(S)
 U, S, V, = np.linalg.svd(y_data, full_matrices=False)
 print(y_data)
 print(S)
+
+
+y_datasets = [y_data, y_data_asymm, y_data_asymm2]
 
 for rseed in xrange(nruns):
     np.random.seed(rseed)
@@ -69,15 +84,15 @@ for rseed in xrange(nruns):
     for nonlinear in [True, False]:
         nonlinearity_function = tf.nn.leaky_relu
         for nlayer in [4, 3, 2]:
-            for symmetric in [False, True]:
+            for symmetric in [0, 1, 2]:
                 num_hidden = num_hidden
                 print "nlayer %i nonlinear %i symmetric %i run %i" % (nlayer, nonlinear, symmetric, rseed)
-                filename_prefix = "results/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_" %(nlayer,nonlinear,symmetric,rseed)
+                filename_prefix = "results_2/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_" %(nlayer,nonlinear,symmetric,rseed)
 
                 np.random.seed(rseed)
                 tf.set_random_seed(rseed)
                 this_x_data = x_data
-                this_y_data = y_data if symmetric else y_data_asymm
+                this_y_data = y_datasets[symmetric] 
 
                 input_ph = tf.placeholder(tf.float32, shape=[None, num_inputs])
                 target_ph = tf.placeholder(tf.float32, shape=[None, num_outputs])
@@ -224,3 +239,4 @@ for rseed in xrange(nruns):
                             curr_eta *= eta_decay
                     
                 print "Final MSE: %f" %(test_accuracy())
+                tf.reset_default_graph()

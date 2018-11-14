@@ -11,7 +11,7 @@ library(lmerTest)
 
 # load data
 ```{r}
-num_runs = 47
+num_runs = 4
 num_layerss = 2:4
 ```
 
@@ -19,12 +19,12 @@ num_layerss = 2:4
 d = data.frame()
 for (run_i in 0:(num_runs-1)) {
   for (num_layers in num_layerss) {
-    for (symmetric in 0:1) {
+    for (symmetric in 0:2) {
       for (nonlinear in 0:1) {
-        filename = sprintf("results/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_loss_track.csv",
+        filename = sprintf("results_2/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_loss_track.csv",
                            num_layers, nonlinear, symmetric, run_i)
         this_d = read_csv(filename) %>%
-          mutate(run=run_i, nonlinear=nonlinear==1, symmetric=symmetric==1, num_layers=num_layers)
+          mutate(run=run_i, nonlinear=nonlinear==1, symmetric=factor(symmetric, levels=0:2, labels=c("symmetric", "asymmetric 1", "asymmetric 2")), num_layers=num_layers)
         d = bind_rows(d, this_d)
       }
     }
@@ -73,10 +73,29 @@ summary(model)
 ```
 
 ```{r}
+learned_diff_d = learned_d %>%
+  spread(symmetric, learned_epoch) %>%
+  mutate(learn_diff = `asymmetric 1` - `symmetric`,
+         learn_diff_2 = `asymmetric 2` - `symmetric`)
+```
+
+```{r}
 ggplot(learned_d %>% filter(nonlinear, num_layers==4), aes(x=learned_epoch, color=symmetric)) +
   geom_line(stat="density") +
   facet_grid(. ~ num_layers, scales="free")
 ```
 ```{r}
 ggsave("plots/basic_symmetry_stopping_times.png", width=8, height=4)
+```
+
+
+```{r}
+ggplot(learned_diff_d %>% filter(nonlinear, num_layers==4), aes(x=learn_diff)) +
+  geom_line(stat="density") +
+  facet_grid(. ~ num_layers, scales="free") +
+  labs(x="Amount longer it took to learn non-symmetric")
+```
+
+```{r}
+ggsave("plots/basic_symmetry_stopping_time_differences.png", width=8, height=4)
 ```
