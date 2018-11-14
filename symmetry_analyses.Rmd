@@ -11,7 +11,7 @@ library(lmerTest)
 
 # load data
 ```{r}
-num_runs = 4
+num_runs = 31
 num_layerss = 2:4
 ```
 
@@ -25,6 +25,7 @@ for (run_i in 0:(num_runs-1)) {
                            num_layers, nonlinear, symmetric, run_i)
         this_d = read_csv(filename) %>%
           mutate(run=run_i, nonlinear=nonlinear==1, symmetric=factor(symmetric, levels=0:2, labels=c("symmetric", "asymmetric 1", "asymmetric 2")), num_layers=num_layers)
+         # mutate(run=run_i, nonlinear=nonlinear==1, symmetric=factor(symmetric, levels=0:2, labels=c("symmetric", "asymmetric 1", "asymmetric 2")), num_layers=num_layers)
         d = bind_rows(d, this_d)
       }
     }
