@@ -11,7 +11,7 @@ eta_decay = 1.0 #multiplicative per eta_decay_epoch epochs
 eta_decay_epoch = 10
 nepochs = 200000
 termination_thresh = 0.01 # stop at this loss
-nruns = 100
+nruns = 500
 num_inputs = 5
 num_outputs = 20
 num_hidden = num_inputs
@@ -22,12 +22,12 @@ def normalize(vec):
     return vec/np.sqrt(np.sum(np.square(vec)))
 
 
-input_mode = np.expand_dims(normalize(np.arange(num_inputs)), 0)
+input_mode = np.expand_dims(normalize(np.arange(num_inputs)+1), 0)
 
 output_mode_symmetric = np.expand_dims(normalize(np.ones(num_outputs)), 0)
 output_mode_asymmetric = np.expand_dims(np.zeros(num_outputs), 0)
 output_mode_asymmetric[0, 0] = 1.
-output_mode_asymmetric_2 = np.expand_dims(normalize(np.arange(num_outputs)), 0)
+output_mode_asymmetric_2 = np.expand_dims(normalize(np.arange(num_outputs)+1), 0)
 
 y_data = S*np.matmul(input_mode.transpose(), output_mode_symmetric)
 y_data_asymm = S*np.matmul(input_mode.transpose(), output_mode_asymmetric)
