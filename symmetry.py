@@ -12,26 +12,27 @@ eta_decay_epoch = 10
 nepochs = 200000
 termination_thresh = 0.01 # stop at this loss
 nruns = 100
-num_inputs = 4
-num_outputs = 6
-num_hidden = 4
-S_vec = [4, 3] 
+num_inputs = 5
+num_outputs = 20
+num_hidden = num_inputs
+S = 4
 ###################################
 
-y_data_asymm = np.zeros([4, num_outputs])
-y_data_asymm2 = np.zeros([4, num_outputs])
-y_data = np.zeros([4, num_outputs])
+def normalize(vec):
+    return vec/np.sqrt(np.sum(np.square(vec)))
 
-for i in range(len(S_vec)):
-    y_data_asymm[2*i, i] = S_vec[i]
 
-y_data_asymm2[0, 0] = 5*S_vec[0]/np.sqrt(26)
-y_data_asymm2[1, 0] = S_vec[0]/np.sqrt(26)
-y_data_asymm2[2, 1] = 3*S_vec[1]/np.sqrt(10)
-y_data_asymm2[3, 1] = S_vec[1]/np.sqrt(10)
+input_mode = np.expand_dims(normalize(np.arange(num_inputs)), 0)
 
-y_data[0:2, 0] = S_vec[0]/np.sqrt(2)
-y_data[2:4, 1] = S_vec[1]/np.sqrt(2)
+output_mode_symmetric = np.expand_dims(normalize(np.ones(num_outputs)), 0)
+output_mode_asymmetric = np.expand_dims(np.zeros(num_outputs), 0)
+output_mode_asymmetric[0, 0] = 1.
+output_mode_asymmetric_2 = np.expand_dims(normalize(np.arange(num_outputs)), 0)
+
+y_data = S*np.matmul(input_mode.transpose(), output_mode_symmetric)
+y_data_asymm = S*np.matmul(input_mode.transpose(), output_mode_asymmetric)
+y_data_asymm2 = S*np.matmul(input_mode.transpose(), output_mode_asymmetric_2)
+
 
 np.savetxt("asymmetric_data.csv", y_data_asymm, delimiter=',')
 np.savetxt("asymmetric_data_2.csv", y_data_asymm2, delimiter=',')
@@ -53,7 +54,7 @@ y_datasets = [y_data, y_data_asymm, y_data_asymm2]
 for rseed in xrange(nruns):
     np.random.seed(rseed)
 
-    x_data = np.eye(4)
+    x_data = np.eye(num_inputs)
 
 #    Vt = random_orthogonal(4)
 #    U = random_orthogonal(7)[:, :4]
@@ -84,7 +85,7 @@ for rseed in xrange(nruns):
             for symmetric in [0, 1, 2]:
                 num_hidden = num_hidden
                 print "nlayer %i nonlinear %i symmetric %i run %i" % (nlayer, nonlinear, symmetric, rseed)
-                filename_prefix = "results_input_symmetry/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_" %(nlayer,nonlinear,symmetric,rseed)
+                filename_prefix = "results_better/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_" %(nlayer,nonlinear,symmetric,rseed)
 
                 np.random.seed(rseed)
                 tf.set_random_seed(rseed)
