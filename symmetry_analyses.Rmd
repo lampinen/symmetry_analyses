@@ -21,7 +21,7 @@ for (run_i in 0:(num_runs-1)) {
   for (num_layers in num_layerss) {
     for (symmetric in 0:2) {
       for (nonlinear in 0:1) {
-        filename = sprintf("results_better_bigger/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_loss_track.csv",
+        filename = sprintf("results_better_bigger_no_output_relu/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_loss_track.csv",
                            num_layers, nonlinear, symmetric, run_i)
         this_d = read_csv(filename) %>%
           mutate(run=run_i, nonlinear=nonlinear==1, symmetric=factor(symmetric, levels=0:2, labels=c("symmetric", "asymmetric 1", "asymmetric 2")), num_layers=num_layers)
@@ -69,7 +69,7 @@ learned_d = d %>%
 
 
 ```{r}
-model = lmer(learned_epoch ~ symmetric  + (1 | run), learned_d %>% filter(num_layers==4, nonlinear))
+model = lmer(learned_epoch ~ symmetric  + (1 | run), learned_d %>% filter(num_layers==2, nonlinear))
 summary(model)
 ```
 
@@ -92,7 +92,7 @@ ggsave("plots/basic_symmetry_stopping_times.png", width=8, height=4)
 
 ```{r}
 ggplot(learned_diff_d %>% filter(nonlinear, num_layers==4), aes(x=learn_diff_2)) +
-  geom_line(stat="density", adjust=0.1) +
+  geom_line(stat="density", adjust=0.5) +
   facet_grid(. ~ num_layers, scales="free") +
   geom_vline(xintercept=0, color="red") +
   labs(x="Amount longer it took to learn non-symmetric")

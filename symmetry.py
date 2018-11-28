@@ -85,7 +85,7 @@ for rseed in xrange(nruns):
             for symmetric in [0, 1, 2]:
                 num_hidden = num_hidden
                 print "nlayer %i nonlinear %i symmetric %i run %i" % (nlayer, nonlinear, symmetric, rseed)
-                filename_prefix = "results_better_bigger/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_" %(nlayer,nonlinear,symmetric,rseed)
+                filename_prefix = "results_better_bigger_no_output_relu/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_" %(nlayer,nonlinear,symmetric,rseed)
 
                 np.random.seed(rseed)
                 tf.set_random_seed(rseed)
@@ -128,7 +128,7 @@ for rseed in xrange(nruns):
                         print "Error, invalid number of layers given"
                         exit(1)
 
-                    output = nonlinearity_function(pre_output) 
+                    output = pre_output # nonlinearity_function(pre_output)  # is this just due to the output weirdness?
                 else:
                     if nlayer == 2:
                         W1 = tf.Variable(tf.random_normal([num_hidden,num_inputs],0.,0.5/(num_hidden+num_inputs)))
