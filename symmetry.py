@@ -12,8 +12,8 @@ eta_decay_epoch = 10
 nepochs = 200000
 termination_thresh = 0.01 # stop at this loss
 nruns = 500
-num_inputs = 5
-num_outputs = 20
+num_inputs = 10
+num_outputs = 50
 num_hidden = num_inputs
 S = 4
 ###################################
@@ -85,7 +85,7 @@ for rseed in xrange(nruns):
             for symmetric in [0, 1, 2]:
                 num_hidden = num_hidden
                 print "nlayer %i nonlinear %i symmetric %i run %i" % (nlayer, nonlinear, symmetric, rseed)
-                filename_prefix = "results_better/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_" %(nlayer,nonlinear,symmetric,rseed)
+                filename_prefix = "results_better_bigger/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_" %(nlayer,nonlinear,symmetric,rseed)
 
                 np.random.seed(rseed)
                 tf.set_random_seed(rseed)
