@@ -81,11 +81,11 @@ for rseed in xrange(nruns):
 
     for nonlinear in [True, False]:
         nonlinearity_function = tf.nn.leaky_relu
-        for nlayer in [4, 3, 2]:
+        for nlayer in [1]:
             for symmetric in [0, 1, 2]:
                 num_hidden = num_hidden
                 print "nlayer %i nonlinear %i symmetric %i run %i" % (nlayer, nonlinear, symmetric, rseed)
-                filename_prefix = "results_better_bigger_no_output_relu/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_" %(nlayer,nonlinear,symmetric,rseed)
+                filename_prefix = "results_better_bigger/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_" %(nlayer,nonlinear,symmetric,rseed)
 
                 np.random.seed(rseed)
                 tf.set_random_seed(rseed)
@@ -95,7 +95,10 @@ for rseed in xrange(nruns):
                 input_ph = tf.placeholder(tf.float32, shape=[None, num_inputs])
                 target_ph = tf.placeholder(tf.float32, shape=[None, num_outputs])
                 if nonlinear:
-                    if nlayer == 2:
+                    if nlayer == 1:
+                        W1 = tf.Variable(tf.random_normal([num_outputs,num_inputs],0.,0.5/(num_outputs+num_inputs)))
+                        pre_output = nonlinearity_function(tf.matmul(W1,tf.transpose(input_ph)))
+                    elif nlayer == 2:
                         W1 = tf.Variable(tf.random_normal([num_hidden,num_inputs],0.,0.5/(num_hidden+num_inputs)))
                         W2 = tf.Variable(tf.random_normal([num_outputs,num_hidden],0.,0.5/(num_hidden+num_outputs)))
                         internal_rep = nonlinearity_function(tf.matmul(W1,tf.transpose(input_ph)))
@@ -128,9 +131,13 @@ for rseed in xrange(nruns):
                         print "Error, invalid number of layers given"
                         exit(1)
 
-                    output = pre_output # nonlinearity_function(pre_output)  # is this just due to the output weirdness?
+                    #output = pre_output # linear transformation before output erases effect 
+                    output = nonlinearity_function(pre_output) 
                 else:
-                    if nlayer == 2:
+                    if nlayer == 1:
+                        W1 = tf.Variable(tf.random_normal([num_outputs,num_inputs],0.,0.5/(num_outputs+num_inputs)))
+                        pre_output = tf.matmul(W1,tf.transpose(input_ph))
+                    elif nlayer == 2:
                         W1 = tf.Variable(tf.random_normal([num_hidden,num_inputs],0.,0.5/(num_hidden+num_inputs)))
                         W2 = tf.Variable(tf.random_normal([num_outputs,num_hidden],0.,0.5/(num_hidden+num_outputs)))
                         internal_rep = (tf.matmul(W1,tf.transpose(input_ph)))
