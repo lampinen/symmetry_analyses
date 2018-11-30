@@ -11,11 +11,13 @@ eta_decay = 1.0 #multiplicative per eta_decay_epoch epochs
 eta_decay_epoch = 10
 nepochs = 200000
 termination_thresh = 0.01 # stop at this loss
-nruns = 500
+nruns = 100 
 num_inputs = 10
 num_outputs = 50
 num_hidden = num_inputs
 S = 4
+track_SVD = True
+print_modes = False # print full modes as well as projections when tracking SVD
 ###################################
 
 def normalize(vec):
@@ -33,7 +35,6 @@ y_data = S*np.matmul(input_mode.transpose(), output_mode_symmetric)
 y_data_asymm = S*np.matmul(input_mode.transpose(), output_mode_asymmetric)
 y_data_asymm2 = S*np.matmul(input_mode.transpose(), output_mode_asymmetric_2)
 
-
 np.savetxt("asymmetric_data.csv", y_data_asymm, delimiter=',')
 np.savetxt("asymmetric_data_2.csv", y_data_asymm2, delimiter=',')
 np.savetxt("symmetric_data.csv", y_data, delimiter=',')
@@ -48,7 +49,7 @@ U, S, V, = np.linalg.svd(y_data, full_matrices=False)
 print(y_data)
 print(S)
 
-
+output_modes = [output_mode_symmetric, output_mode_asymmetric, output_mode_asymmetric_2]
 y_datasets = [y_data, y_data_asymm, y_data_asymm2]
 
 for rseed in xrange(nruns):
@@ -81,7 +82,7 @@ for rseed in xrange(nruns):
 
     for nonlinear in [True, False]:
         nonlinearity_function = tf.nn.leaky_relu
-        for nlayer in [1]:
+        for nlayer in [1, 2, 3, 4]:
             for symmetric in [0, 1, 2]:
                 num_hidden = num_hidden
                 print "nlayer %i nonlinear %i symmetric %i run %i" % (nlayer, nonlinear, symmetric, rseed)
@@ -190,8 +191,8 @@ for rseed in xrange(nruns):
                     MSE /= num_inputs 
                     return MSE
 
-                def print_outputs():
-                    print sess.run(output,feed_dict={input_ph: this_x_data})
+                def get_outputs():
+                    return sess.run(output,feed_dict={input_ph: this_x_data})
 
 
                 def print_preoutputs():
@@ -216,6 +217,13 @@ for rseed in xrange(nruns):
                 def run_train_epoch():
                     sess.run(train,feed_dict={eta_ph: curr_eta,input_ph: this_x_data,target_ph: this_y_data})
 
+
+                def get_mode_1(X):
+                    """Gets top rank mode U1, V1, and s of matrix X."""
+                    U, S, V = np.linalg.svd(X, full_matrices=False)
+                    return U[:, 0], S[0], V[0, :]
+                    
+
                 print "Initial MSE: %f" %(test_accuracy())
 
                 #loaded_pre_outputs = np.loadtxt(pre_output_filename_to_load,delimiter=',')
@@ -223,16 +231,42 @@ for rseed in xrange(nruns):
                 curr_eta = init_eta
                 rep_track = []
                 loss_filename = filename_prefix + "loss_track.csv"
+                SVD_filename = filename_prefix + "SVD_track.csv"
+                if track_SVD:
+                    fsvd = open(SVD_filename, 'w')
+
                 with open(loss_filename, 'w') as fout:
                     fout.write("epoch, MSE\n")
                     curr_mse = test_accuracy()
                     fout.write("%i, %f\n" %(0, curr_mse))
-                    for epoch in xrange(nepochs):
+                    if track_SVD:
+                        fsvd.write("epoch, U_dot, S, V_dot\n")
+                        U1, S1, V1 = get_mode_1(get_outputs())  
+                        U_proj = np.dot(output_modes[symmetric], U1)[0]
+                        V_proj = np.dot(input_mode, V1)[0]
+                        print "Udot: %.2f, S: %.2f, Vdot: %.2f" % (U_proj, S1, V_proj)
+                        fsvd.write("0, %f, %f, %f\n" %(U_proj, S1, V_proj))
+                        if print_modes:
+                            print(U1)
+                            print(V1)
+                    for epoch in xrange(1, nepochs+1):
                         run_train_epoch()
+                        if track_SVD and (epoch < 100 or epoch % 5 == 0):
+                            U1, S1, V1 = get_mode_1(get_outputs())  
+                            U_proj = np.dot(output_modes[symmetric], U1)[0]
+                            V_proj = np.dot(input_mode, V1)[0]
+                            print "Udot: %.2f, S: %.2f, Vdot: %.2f" % (U_proj, S1, V_proj)
+                            fsvd.write("%i, %f, %f, %f\n" %(epoch, U_proj, S1, V_proj))
+                            if print_modes:
+                                print(U1)
+                                print(V1)
+
                         if epoch % 5 == 0:
                             curr_mse = test_accuracy()
                             print "epoch: %i, MSE: %f" %(epoch, curr_mse)	
                             fout.write("%i, %f\n" %(epoch, curr_mse))
+
+
                             if curr_mse < termination_thresh:
                                 print("Early stop!")
                                 break
@@ -242,6 +276,9 @@ for rseed in xrange(nruns):
                         
                         if epoch % eta_decay_epoch == 0:
                             curr_eta *= eta_decay
+
+                if track_SVD:
+                    fsvd.close()
                     
                 print "Final MSE: %f" %(test_accuracy())
                 tf.reset_default_graph()
