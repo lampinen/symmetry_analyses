@@ -11,22 +11,30 @@ library(lmerTest)
 
 # load data
 ```{r}
-num_runs = 500
-num_layerss = 2:4
+num_runs = 50
+num_layerss = 1:4
 ```
 
-```{r}
+```{r message=FALSE}
 d = data.frame()
+svd_d = data.frame()
 for (run_i in 0:(num_runs-1)) {
   for (num_layers in num_layerss) {
     for (symmetric in 0:2) {
       for (nonlinear in 0:1) {
-        filename = sprintf("results_better_bigger_no_output_relu/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_loss_track.csv",
+        filename = sprintf("results_better_bigger/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_loss_track.csv",
                            num_layers, nonlinear, symmetric, run_i)
         this_d = read_csv(filename) %>%
           mutate(run=run_i, nonlinear=nonlinear==1, symmetric=factor(symmetric, levels=0:2, labels=c("symmetric", "asymmetric 1", "asymmetric 2")), num_layers=num_layers)
          # mutate(run=run_i, nonlinear=nonlinear==1, symmetric=factor(symmetric, levels=0:2, labels=c("symmetric", "asymmetric 1", "asymmetric 2")), num_layers=num_layers)
         d = bind_rows(d, this_d)
+        
+        filename = sprintf("results_better_bigger/nlayer_%i_nonlinear_%i_symmetric_%i_rseed_%i_SVD_track.csv",
+                           num_layers, nonlinear, symmetric, run_i)
+        this_d = read_csv(filename) %>%
+          mutate(run=run_i, nonlinear=nonlinear==1, symmetric=factor(symmetric, levels=0:2, labels=c("symmetric", "asymmetric 1", "asymmetric 2")), num_layers=num_layers)
+         # mutate(run=run_i, nonlinear=nonlinear==1, symmetric=factor(symmetric, levels=0:2, labels=c("symmetric", "asymmetric 1", "asymmetric 2")), num_layers=num_layers)
+        svd_d = bind_rows(svd_d, this_d)
       }
     }
   }
@@ -38,7 +46,6 @@ d = d %>%
   #filter((num_layers==5 & epoch %% 500 == 0) | (num_layers==4 & epoch %% 200 == 0) | (num_layers == 3 & epoch %% 50 == 0) | num_layers == 2) %>%
   complete(run, symmetric, nesting(nonlinear, num_layers, epoch), fill=list(MSE=0)) 
 ```
-
 
 # basic analysis
 ```{r}
@@ -56,7 +63,7 @@ ggplot(data=d, aes(x=epoch, y=MSE, color=symmetric)) +
 ```
 
 ```{r}
-ggsave("plots/basic_symmetry_comparison.png", width=8, height=4)
+#ggsave("plots/basic_symmetry_comparison.png", width=8, height=4)
 ```
 
 ```{r}
@@ -69,7 +76,7 @@ learned_d = d %>%
 
 
 ```{r}
-model = lmer(learned_epoch ~ symmetric  + (1 | run), learned_d %>% filter(num_layers==2, nonlinear))
+model = lmer(learned_epoch ~ symmetric  + (1 | run), learned_d %>% filter(num_layers==1, nonlinear))
 summary(model)
 ```
 
@@ -86,7 +93,7 @@ ggplot(learned_d %>% filter(nonlinear, num_layers==4), aes(x=learned_epoch, colo
   facet_grid(. ~ num_layers, scales="free")
 ```
 ```{r}
-ggsave("plots/basic_symmetry_stopping_times.png", width=8, height=4)
+#ggsave("plots/basic_symmetry_stopping_times.png", width=8, height=4)
 ```
 
 
@@ -101,3 +108,26 @@ ggplot(learned_diff_d %>% filter(nonlinear, num_layers==4), aes(x=learn_diff_2))
 ```{r}
 ggsave("plots/basic_symmetry_stopping_time_differences.png", width=8, height=4)
 ```
+
+
+# SVD analyses
+
+```{r}
+svd_d = svd_d %>%
+  complete(run, symmetric, nesting(nonlinear, num_layers, epoch), fill=list(S=4, U_dot=1, V_dot=1)) %>%
+  mutate(UV = U_dot * V_dot,
+         U_dot = abs(U_dot),
+         V_dot = abs(V_dot)) %>% 
+  gather(measurement, value, S, U_dot, V_dot, UV)
+```
+
+```{r}
+ggplot(svd_d, aes(x=epoch, y=value, color=symmetric)) +
+  geom_line(stat="summary", fun.y=mean) +
+#  geom_line(aes(group=interaction(run, symmetric)), alpha=0.1) +
+  facet_grid(measurement ~ num_layers + nonlinear, scales="free")
+```
+```{r}
+ggsave("plots/SVD_comparison.png", width=14, height=7)
+```
+
