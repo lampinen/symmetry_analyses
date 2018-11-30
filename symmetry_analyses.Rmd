@@ -11,7 +11,7 @@ library(lmerTest)
 
 # load data
 ```{r}
-num_runs = 50
+num_runs = 100
 num_layerss = 1:4
 ```
 
@@ -81,6 +81,16 @@ summary(model)
 ```
 
 ```{r}
+model = lmer(learned_epoch ~ symmetric  + (1 | run), learned_d %>% filter(num_layers==2, nonlinear))
+summary(model)
+```
+
+```{r}
+model = lmer(learned_epoch ~ symmetric  + (1 | run), learned_d %>% filter(num_layers==4, nonlinear))
+summary(model)
+```
+
+```{r}
 learned_diff_d = learned_d %>%
   spread(symmetric, learned_epoch) %>%
   mutate(learn_diff = `asymmetric 1` - `symmetric`,
@@ -131,3 +141,22 @@ ggplot(svd_d, aes(x=epoch, y=value, color=symmetric)) +
 ggsave("plots/SVD_comparison.png", width=14, height=7)
 ```
 
+```{r}
+SVD_comp_d = svd_d %>%
+  spread(symmetric, value) %>%
+  mutate(diff_1 = `asymmetric 1` - symmetric,
+         diff_2 = `asymmetric 2` - symmetric) %>%
+  gather(difference, value, diff_1, diff_2)
+```
+
+```{r}
+ggplot(SVD_comp_d, aes(x=epoch, y=value, color=difference)) +
+  geom_line(stat="summary", fun.y=mean) +
+#  geom_line(aes(group=interaction(run, symmetric)), alpha=0.1) +
+  facet_grid(measurement ~ num_layers + nonlinear, scales="free") +
+  scale_color_brewer(palette="Dark2")
+```
+
+```{r}
+ggsave("plots/SVD_comparison_2.png", width=14, height=7)
+```
