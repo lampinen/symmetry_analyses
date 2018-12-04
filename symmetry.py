@@ -12,6 +12,7 @@ eta_decay_epoch = 10
 nepochs = 200000
 termination_thresh = 0.01 # stop at this loss
 nruns = 100 
+run_offset = 0
 num_inputs = 10
 num_outputs = 50
 num_hidden = num_inputs
@@ -52,7 +53,7 @@ print(S)
 output_modes = [output_mode_symmetric, output_mode_asymmetric, output_mode_asymmetric_2]
 y_datasets = [y_data, y_data_asymm, y_data_asymm2]
 
-for rseed in xrange(nruns):
+for rseed in xrange(run_offset, run_offset + nruns):
     np.random.seed(rseed)
 
     x_data = np.eye(num_inputs)
